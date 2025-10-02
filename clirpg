@@ -1,0 +1,305 @@
+
+use std::{io,thread, time};
+use std::io::Write; // For flushing, apparently
+
+use colored::Colorize;
+
+#[derive(Clone)]
+struct Weapon {
+    name: String,
+    attack: i32,
+    cost: i32,
+}
+struct PlayerData {
+    name: String,
+    health: i32,
+    equipped: Weapon,
+    score: i32,
+    gold: i32,
+    
+}
+struct ShopData { 
+    wooden_stick: bool,
+    metal_pole: bool,
+    rusty_sword: bool, 
+    iron_sword: bool,
+}
+fn prompt() {
+    print!(">> ");
+    io::stdout().flush().unwrap();
+    }
+
+fn showShop(shop_data: ShopData, weapons: &[Weapon]) -> ShopData {
+    println!("Welcome to my shop!");
+    // Figure out better way to do this.
+    // ShopItem Struct??? 
+    // Defo.
+    if shop_data.wooden_stick {
+        println!("0) PURCHASED - Wooden Stick");
+    }
+    else {
+        println!("0) {} - Wooden Stick", weapons[0].clone().cost);
+        }
+    prompt();
+    let mut shop_input = String::new();
+    io::stdin().read_line(&mut shop_input).unwrap();
+    let shop_choice = shop_input.trim();
+    // Implement Later
+    if shop_choice == "0" {
+        if shop_data.wooden_stick { 
+            println!("You've already purchased that")
+        }
+    }
+
+    return shop_data;
+}   
+
+struct Enemy {
+    name: String,
+    health: i32,
+    max_health: i32,
+    attack: i32,
+}
+enum FightResult {
+    Won(i32), // Score
+    Died(String), // Name of thing that killed ye
+    Ran
+}
+
+fn printBox() {
+    println!("=========================================================");
+    println!("{}","~V~V~V~V~V~V~V~V~V~V~V~V~V~V~V~V~V~V~V~V~V~V~V~V~V~V~V~V~".red());
+    println!("=========================================================\n");
+}
+fn printAscii() {
+    printBox();
+    println!("CCCC  LL      IIII         RRRRRr   PPPPp    GGGGg ");
+    println!("Cc    LL       II          RR  RR   PP PP  gGGGGGGg ");
+    println!("C     LL       II   -----  RR  RR   PP PP  GG      ");
+    println!("C     LL       II   -----  RRRRRr   PPPPp  GG   GGGG");
+    println!("Cc    LL       II          RR  RR   PP     gGG   GG   ..");
+    println!("CCCC  LLLLLL  IIII         RR  rRR  PP      GGGGGGG   ..\n");
+    thread::sleep(time::Duration::from_millis(300));
+    println!("By Flo The Wizard.\n");
+    printBox();
+    
+}
+fn battleAGoblin(hero_data: &mut PlayerData) -> FightResult{
+    // Returns 0 if you died, 
+    let mut enemy = Enemy { 
+        name: String::from("Goblin"),
+        health: 10 + hero_data.score / 10,
+        max_health: 10 + hero_data.score / 10,
+        attack: 2 + hero_data.score / 20,
+    };
+    println!("You go wandering... ");
+    thread::sleep(time::Duration::from_millis(1000));
+    println!("You stumble upon a...");
+    thread::sleep(time::Duration::from_millis(500));
+    
+    let mut fight_over = false;
+    let mut fight_result = FightResult::Died(String::from("Buggy Code"));
+    while fight_over != true {
+        // Get the input
+        println!("A {}!", enemy.name.red().bold());
+        thread::sleep(time::Duration::from_millis(300));
+        println!("You have {} HP.",hero_data.health);
+        println!("(0) Run!");
+        println!("(1) Attack!");
+        prompt();
+        let mut input = String::new();
+        io::stdin().read_line(&mut input).unwrap();
+        let choice = input.trim();
+        // Process the Input
+        if choice == "0" 
+            { 
+            println!("You ran from the {}", enemy.name.red().bold());
+            fight_result =  FightResult::Ran;
+            fight_over = true;
+        }
+        if choice == "1" 
+        {
+            // Player goes first
+            let damage_done = hero_data.equipped.attack;
+            println!("You did {} Damage to the {}", damage_done, enemy.name.red().bold());
+            thread::sleep(time::Duration::from_millis(1000));
+            enemy.health -= damage_done;
+            // Check if they've died
+            if enemy.health <= 0 {
+                println!("You defeated the {}!!!",enemy.name.red().bold());
+                let score = enemy.max_health * enemy.attack;
+                fight_result =  FightResult::Won(score);
+                fight_over = true;
+            }
+            if fight_over == false {
+                // Then the enemy...
+                println!("The {} did {} to you.", enemy.name.red().bold(), enemy.attack);
+                hero_data.health -= enemy.attack;
+                // Check if YOU'VE died
+                if hero_data.health <= 0 {
+                    fight_result =  FightResult::Died(String::from(&enemy.name));   
+                    fight_over = true;
+                }
+            }
+        }
+        thread::sleep(time::Duration::from_millis(1000));
+    }
+    return fight_result;
+    
+}    
+
+fn takeInName() -> String {
+    println!("What is your {}?","name".bold());
+    prompt();
+    let mut input = String::new();
+    io::stdin().read_line(&mut input).unwrap();
+    return input.trim().to_string();
+}
+
+fn confirm() -> bool {
+    println!("(0) - No\n(1) - Yes");
+    prompt();
+    let mut choice = String::new();
+    io::stdin().read_line(&mut choice).unwrap();
+    let yesno = choice.trim();
+    if yesno == "1" {
+        return true
+    }
+    return false
+}
+
+fn main() {
+    // Declare Base Hero, Weapon, Shop Data
+    let weapons = [
+        Weapon {
+            name: String::from("Wooden Stick"),
+            attack: 3,
+            cost: 0,
+        },
+        Weapon {
+            name: String::from("Metal Pole"),
+            attack: 4, 
+            cost: 10,
+        },
+        Weapon {
+            name: String::from("Rusty Sword"),
+            attack: 7, 
+            cost: 50,
+        },
+        Weapon {
+            name: String::from("Iron Sword"),
+            attack: 10, 
+            cost: 100,
+        },
+
+
+    ];
+    let mut shop = ShopData {
+        wooden_stick: true,
+        metal_pole: false,
+        rusty_sword: false,
+        iron_sword: false,
+    };
+
+
+    let mut hero = PlayerData {
+        name: String::from(""),
+        health: 30,
+        equipped: weapons[0].clone(),
+        score: 0,
+        gold: 0,
+    };
+
+    // Intro
+    printAscii();
+    thread::sleep(time::Duration::from_millis(700));
+    println!("Welcome to CLIRPG");
+    thread::sleep(time::Duration::from_millis(1000));
+
+    // Get the name
+    let mut name_confirmed = false;
+    let mut player_name = String::from("Hero");
+    while name_confirmed == false {
+        let input = takeInName();
+        player_name = String::from(input.trim());
+        println!("{}? Are you sure?",player_name.bold());
+        name_confirmed = confirm();
+    }
+    hero.name = player_name.to_string();
+
+    // Welcome, Yada Yada
+    println!("Welcome, {}.", hero.name.bold());
+    let mut game_over = false;
+    while game_over != true {
+        thread::sleep(time::Duration::from_millis(1000));
+        // Info Messages
+        println!("{}, you are equipped with a {}, and have {} HP.",hero.name.bold(), hero.equipped.name,hero.health);
+        thread::sleep(time::Duration::from_millis(1000));
+        println!("What do you want to do?");
+        println!("(0) Visit Shop");
+        println!("(1) Go Out");
+        println!("(2) Idle");
+        prompt();
+        let mut input = String::new();
+        io::stdin().read_line(&mut input).unwrap();
+        let choice = input.trim().to_string();
+        // if chains lets goooo
+        if choice == "0" { // Woohoo Shop
+            shop = showShop(shop, &weapons);
+        }
+        if choice == "1" { // Do battle
+            let result = battleAGoblin(&mut hero);
+            match result {
+                FightResult::Won(score) => {
+                    // Woohoo
+                    hero.score += score;
+                    // Work out gold?
+                    // Random from 1 - score / 10?
+                    let gold_earned = score / 10;
+                    hero.gold += gold_earned;
+                    println!("You got ${}! you now have ${} total!", gold_earned, hero.gold);     
+                }
+                FightResult::Died(enemy_name) => { 
+                    println!("Here lies {}. Died to {}.",hero.name.bold(), enemy_name);
+                    println!("You wielded a {} and your score was {}.", hero.equipped.name, hero.score);
+                    thread::sleep(time::Duration::from_millis(500));
+                    println!("Play Again?");
+                    prompt();
+                    let play_again = confirm();
+                    if play_again {
+                        // Let's go again
+                        shop = ShopData {
+                            wooden_stick: true,
+                            metal_pole: false,
+                            rusty_sword: false,
+                            iron_sword: false,
+                        };
+                        hero = PlayerData {
+                            name: hero.name,
+                            health: 30,
+                            equipped: weapons[0].clone(),
+                            score: 0,
+                            gold: 0,
+                        };
+                        }
+                    else {
+                        println!("Thank you for playing!");
+                        game_over = true; // End the game.
+                    }
+                }
+                FightResult::Ran => { 
+                    println!("You ran. And ran and ran and ran.");    
+                }
+            }
+        }
+        if choice == "2" { // Idling
+            println!("Dum dee doo...\n");
+            thread::sleep(time::Duration::from_secs(1));
+            println!("...");
+            thread::sleep(time::Duration::from_secs(1));
+            println!("Hey! Get back to work!\n");
+            thread::sleep(time::Duration::from_millis(500));
+        }
+    println!("")
+    }
+}
